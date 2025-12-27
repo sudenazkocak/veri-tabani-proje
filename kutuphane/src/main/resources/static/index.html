@@ -1,0 +1,311 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Akıllı Kütüphane | Arşiv Yönetim Sistemi</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@700&family=Inter:wght@300;400;600&display=swap" rel="stylesheet">
+    <style>
+        :root { 
+            --library-dark: #0f0c08; 
+            --library-mahogany: #2c1810; 
+            --accent-gold: #d4af37; 
+            --accent-cyan: #00f2ff; 
+        }
+        
+        body { 
+            background: linear-gradient(rgba(15, 12, 8, 0.95), rgba(44, 24, 16, 0.95)), 
+                        url('https://images.unsplash.com/photo-1507842217343-583bb7270b66?ixlib=rb-1.2.1&auto=format&fit=crop&w=1920&q=80');
+            background-size: cover; background-attachment: fixed;
+            font-family: 'Inter', sans-serif; color: #e0e0e0; padding-top: 100px; 
+        }
+
+        h1, h2, h3, h4, .navbar-brand { font-family: 'Playfair Display', serif; }
+
+        /* --- NAVBAR --- */
+        .navbar { 
+            background: rgba(15, 12, 8, 0.95) !important; 
+            backdrop-filter: blur(20px); border-bottom: 2px solid var(--accent-gold);
+        }
+
+        /* --- AUTH SECTION (3D FLIP) --- */
+        #authSection { perspective: 1500px; margin-top: 50px; }
+        .auth-container {
+            width: 100%; max-width: 450px; height: 580px;
+            position: relative; transition: transform 0.8s; transform-style: preserve-3d;
+        }
+        .auth-container.flipped { transform: rotateY(180deg); }
+        .auth-card {
+            position: absolute; width: 100%; height: 100%; backface-visibility: hidden;
+            background: rgba(20, 15, 10, 0.95); border: 1px solid var(--accent-gold);
+            padding: 40px; box-shadow: 0 20px 50px rgba(0,0,0,0.8);
+        }
+        #registerBox { transform: rotateY(180deg); }
+
+        /* --- KITAP KARTLARI --- */
+        .book-card { 
+            background: var(--library-mahogany); border-left: 10px solid var(--accent-gold);
+            border-radius: 5px; padding: 20px; margin-bottom: 20px; transition: 0.4s; position: relative;
+        }
+        .book-card:hover { transform: translateX(10px); background: #3d2218; }
+        
+        /* --- ADMIN TAKİP LİSTESİ --- */
+        .borrow-item {
+            background: rgba(255, 255, 255, 0.03); border-bottom: 1px solid rgba(212, 175, 55, 0.2);
+            padding: 15px 10px; transition: 0.3s;
+        }
+        .borrow-item:hover { background: rgba(212, 175, 55, 0.05); }
+        
+        .user-info { color: var(--accent-gold); font-size: 0.8rem; font-weight: 600; text-transform: uppercase; }
+        .fine-text { color: #ff5e62; font-weight: bold; font-size: 0.9rem; }
+
+        /* Genel Formlar */
+        .form-control, .form-select {
+            background: rgba(255,255,255,0.05); border: 1px solid rgba(212, 175, 55, 0.3); color: white !important;
+        }
+        .btn-primary { background: var(--accent-gold); border: none; color: black; font-weight: bold; }
+        .sidebar-section { background: rgba(15, 12, 8, 0.8); border: 1px solid var(--accent-gold); padding: 20px; margin-bottom: 20px; }
+        .hidden { display: none !important; }
+    </style>
+</head>
+<body>
+
+    <nav class="navbar navbar-expand-lg navbar-dark fixed-top hidden" id="mainNav">
+        <div class="container">
+            <a class="navbar-brand fw-bold" href="#"><i class="fas fa-university me-2"></i>AKILLI KÜTÜPHANE</a>
+            <div class="d-flex align-items-center">
+                <span class="text-white-50 me-3 small" id="navUserName"></span>
+                <button class="btn btn-outline-warning btn-sm" onclick="logout()">GÜVENLİ ÇIKIŞ</button>
+            </div>
+        </div>
+    </nav>
+
+    <div class="container">
+        <div id="authSection" class="row justify-content-center">
+            <div class="auth-container" id="authContainer">
+                <div id="loginBox" class="auth-card text-center">
+                    <i class="fas fa-key fa-3x text-gold mb-4" style="color:var(--accent-gold)"></i>
+                    <h3 style="color:var(--accent-gold)">Arşiv Girişi</h3>
+                    <div class="mt-4 text-start">
+                        <label class="small text-gold">E-posta</label>
+                        <input type="email" id="lEmail" class="form-control mb-3" placeholder="admin@mail.com">
+                        <label class="small text-gold">Şifre</label>
+                        <input type="password" id="lPass" class="form-control mb-4" placeholder="••••••">
+                    </div>
+                    <button class="btn btn-primary w-100 py-3 mb-4" onclick="handleGiris()">KAPIYI AÇ</button>
+                    <p class="small">Kayıtlı değil misiniz? <a href="javascript:void(0)" onclick="toggleAuth(true)" style="color:var(--accent-gold)">Deftere Yazıl</a></p>
+                </div>
+
+                <div id="registerBox" class="auth-card text-center">
+                    <i class="fas fa-feather-alt fa-3x text-gold mb-4" style="color:var(--accent-gold)"></i>
+                    <h3 style="color:var(--accent-gold)">Yeni Kayıt</h3>
+                    <div class="mt-4 text-start">
+                        <div class="row mb-2">
+                            <div class="col-6"><input type="text" id="rAd" class="form-control" placeholder="Ad"></div>
+                            <div class="col-6"><input type="text" id="rSoyad" class="form-control" placeholder="Soyad"></div>
+                        </div>
+                        <input type="email" id="rEmail" class="form-control mb-2" placeholder="E-posta">
+                        <input type="password" id="rPass" class="form-control mb-4" placeholder="Güçlü Şifre">
+                    </div>
+                    <button class="btn btn-primary w-100 py-3 mb-4" onclick="handleKayit()">KAYDI TAMAMLA</button>
+                    <p class="small"><a href="javascript:void(0)" onclick="toggleAuth(false)" style="color:var(--accent-gold)">Geri Dön</a></p>
+                </div>
+            </div>
+        </div>
+
+        <div id="dashboardSection" class="row hidden">
+            <div class="col-lg-7">
+                <div class="d-flex justify-content-between align-items-center mb-4">
+                    <h4 style="color:var(--accent-gold)"><i class="fas fa-scroll me-2"></i>Kitap Koleksiyonu</h4>
+                    <input type="text" class="form-control w-50" id="searchBox" placeholder="Eser ara..." onkeyup="loadBooks()">
+                </div>
+                <div class="row" id="bookGrid"></div>
+            </div>
+
+            <div class="col-lg-5">
+                <div id="adminPanel" class="sidebar-section hidden">
+                    <h5 style="color:var(--accent-gold)" class="mb-3 border-bottom border-warning pb-2">Admin: Arşive Ekle</h5>
+                    <input type="text" id="kitapAd" class="form-control mb-2" placeholder="Eser Adı">
+                    <input type="number" id="kitapStok" class="form-control mb-2" placeholder="Adet">
+                    <input type="text" id="kitapYazar" class="form-control mb-2" placeholder="Müellif">
+                    <select id="kitapKategori" class="form-select mb-3"></select>
+                    <button class="btn btn-primary w-100" onclick="handleKitapEkle()">ARŞİVE EKLE</button>
+                </div>
+
+                <div class="sidebar-section">
+                    <h5 id="borrowTitle" style="color:var(--accent-gold)" class="mb-3">Emanet Takibi</h5>
+                    <div id="myBorrows"></div>
+                </div>
+                
+                <div id="userFineBox" class="sidebar-section text-center border-danger">
+                    <h6 class="text-muted small">Toplam Gecikme Bedeli</h6>
+                    <h2 class="text-danger fw-bold" id="totalFine">0.00 TL</h2>
+                    <small class="extra-small text-white-50">Dakika başı 20.00 TL</small>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const API = "http://localhost:9091/api";
+
+        function toggleAuth(showRegister) {
+            document.getElementById('authContainer').classList.toggle('flipped', showRegister);
+        }
+
+        async function handleGiris() {
+            const email = document.getElementById('lEmail').value;
+            const sifre = document.getElementById('lPass').value;
+            try {
+                const res = await fetch(`${API}/kullanicilar/giris`, {
+                    method: 'POST', headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ email, sifre })
+                });
+                const user = await res.json();
+                localStorage.setItem('kullanici', JSON.stringify(user));
+                initApp(user);
+            } catch (err) { alert("Giriş başarısız!"); }
+        }
+
+        async function handleKayit() {
+            const data = {
+                ad: document.getElementById('rAd').value, soyad: document.getElementById('rSoyad').value,
+                email: document.getElementById('rEmail').value, sifre: document.getElementById('rPass').value, rol: 'user'
+            };
+            await fetch(`${API}/kullanicilar/kayit`, {
+                method: 'POST', headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(data)
+            });
+            toggleAuth(false);
+        }
+
+        function initApp(user) {
+            document.getElementById('authSection').classList.add('hidden');
+            document.getElementById('mainNav').classList.remove('hidden');
+            document.getElementById('dashboardSection').classList.remove('hidden');
+            document.getElementById('navUserName').innerText = `Kütüphaneci: ${user.ad}`;
+
+            if (user.email === 'admin@mail.com') {
+                document.getElementById('adminPanel').classList.remove('hidden');
+                document.getElementById('userFineBox').classList.add('hidden');
+                document.getElementById('borrowTitle').innerHTML = '<i class="fas fa-users-cog me-2"></i> Genel Emanet & Ceza Takibi';
+                loadCategories();
+            }
+            loadBooks(); loadMyBorrows(); loadTotalFine();
+        }
+
+        async function loadBooks() {
+            const user = JSON.parse(localStorage.getItem('kullanici'));
+            const res = await fetch(`${API}/kitaplar`);
+            const data = await res.json();
+            document.getElementById('bookGrid').innerHTML = data.map(b => `
+                <div class="col-md-12">
+                    <div class="book-card shadow">
+                        <div class="d-flex justify-content-between">
+                            <h5 style="color:var(--accent-gold)">${b.ad}</h5>
+                            <span class="badge ${b.stok > 0 ? 'bg-success' : 'bg-danger'}">${b.stok > 0 ? 'Stok: '+b.stok : 'Tükendi'}</span>
+                        </div>
+                        <p class="text-white-50 small mb-3 italic">~ ${b.yazar ? b.yazar.ad : ''}</p>
+                        <div class="d-flex justify-content-between align-items-center">
+                            <button class="btn btn-sm btn-primary px-4" onclick="oduncAl(${b.kitapID})" ${b.stok<=0?'disabled':''}>ÖDÜNÇ AL</button>
+                            ${user.email === 'admin@mail.com' ? `<button class="btn btn-sm text-danger" onclick="handleKitapSil(${b.kitapID})"><i class="fas fa-trash-alt"></i></button>` : ''}
+                        </div>
+                    </div>
+                </div>
+            `).join('');
+        }
+
+        async function loadMyBorrows() {
+            const user = JSON.parse(localStorage.getItem('kullanici'));
+            const isAdmin = user.email === 'admin@mail.com';
+            const url = isAdmin ? `${API}/admin/detayli-takip` : `${API}/odunc/kullanici/${user.kullaniciID}`;
+            
+            const res = await fetch(url);
+            const data = await res.json();
+            
+            document.getElementById('myBorrows').innerHTML = data.map(o => {
+                // Anlık Ceza Hesaplama: (Şu an - Ödünç Tarihi) / Dakika * 20 TL
+                const oduncDate = new Date(o.oduncTarihi);
+                const bitisDate = o.iadeTarihi ? new Date(o.iadeTarihi) : new Date();
+                const farkDakika = Math.floor((bitisDate - oduncDate) / 60000);
+                const anlikCeza = farkDakika > 0 ? farkDakika * 20 : 0;
+
+                return `
+                <div class="borrow-item">
+                    <div class="d-flex justify-content-between align-items-start">
+                        <div>
+                            <div class="small fw-bold" style="color:var(--accent-gold)">${o.kitap.ad}</div>
+                            ${isAdmin ? `<div class="user-info"><i class="fas fa-user me-1"></i>${o.kullanici.ad} ${o.kullanici.soyad}</div>` : ''}
+                            <div class="extra-small text-white-50"><i class="fas fa-clock me-1"></i>${new Date(o.oduncTarihi).toLocaleDateString()} ${new Date(o.oduncTarihi).toLocaleTimeString()}</div>
+                        </div>
+                        <div class="text-end">
+                            <div class="fine-text">${anlikCeza.toFixed(2)} TL</div>
+                            ${!o.iadeTarihi ? 
+                                `<button class="btn btn-sm btn-outline-warning p-1 mt-1" onclick="handleIadeEt(${o.oduncID})"><i class="fas fa-undo"></i> İade</button>` : 
+                                '<span class="badge bg-success extra-small">İade Edildi</span>'}
+                        </div>
+                    </div>
+                </div>`;
+            }).join('');
+        }
+
+        async function handleIadeEt(id) {
+            await fetch(`${API}/odunc/iade/${id}`, { method: 'POST' });
+            loadBooks(); loadMyBorrows(); loadTotalFine();
+        }
+
+        async function loadTotalFine() {
+            const user = JSON.parse(localStorage.getItem('kullanici'));
+            if(!user || user.email === 'admin@mail.com') return;
+            const res = await fetch(`${API}/odunc/ceza/toplam/${user.kullaniciID}`);
+            const total = await res.json();
+            document.getElementById('totalFine').innerText = `${(isNaN(total) ? 0 : total).toFixed(2)} TL`;
+        }
+
+        async function loadCategories() {
+            const res = await fetch(`${API}/kategoriler`);
+            const cats = await res.json();
+            document.getElementById('kitapKategori').innerHTML = cats.map(c => `<option value="${c.kategoriID}">${c.ad}</option>`).join('');
+        }
+
+        async function oduncAl(kitapID) {
+            const user = JSON.parse(localStorage.getItem('kullanici'));
+            await fetch(`${API}/odunc/al`, {
+                method: 'POST', headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ kullanici: { kullaniciID: user.kullaniciID }, kitap: { kitapID: kitapID } })
+            });
+            loadBooks(); loadMyBorrows();
+        }
+
+        async function handleKitapEkle() {
+            const data = {
+                ad: document.getElementById('kitapAd').value,
+                stok: document.getElementById('kitapStok').value,
+                yazar: { ad: document.getElementById('kitapYazar').value },
+                kategori: { kategoriID: parseInt(document.getElementById('kitapKategori').value) }
+            };
+            await fetch(`${API}/kitaplar/ekle`, {
+                method: 'POST', headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(data)
+            });
+            loadBooks();
+        }
+
+        async function handleKitapSil(id) {
+            if(confirm("Bu eseri arşivden silmek istediğinize emin misiniz?")) { 
+                await fetch(`${API}/kitaplar/${id}`, { method: 'DELETE' }); 
+                loadBooks(); 
+            }
+        }
+
+        function logout() { localStorage.clear(); location.reload(); }
+
+        window.onload = () => {
+            const user = localStorage.getItem('kullanici');
+            if(user) initApp(JSON.parse(user));
+        }
+    </script>
+</body>
+</html>
